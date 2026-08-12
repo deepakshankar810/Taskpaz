@@ -12,8 +12,8 @@ interface Station {
 const INITIAL_STATIONS: Station[] = [
   {
     id: 'jfKfPfyJRdk',
-    name: 'Lofi Hip Hop',
-    author: 'Lofi Girl',
+    name: 'Ambient Loop Music',
+    author: 'Focus Radio',
     thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/0.jpg',
   },
 ];
@@ -44,7 +44,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = useState(0);
   
   const playerRef = useRef<any>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
   const isRepeatingRef = useRef(isRepeating);
 
   // Sync ref with state
@@ -159,9 +159,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
               event.target.seekTo(0);
               event.target.playVideo();
             } else {
-              // Fallback to Lofi
-              setCurrentStation(INITIAL_STATIONS[0]);
+              // Fallback to Ambient Loop Music
+              const fallback = INITIAL_STATIONS[0];
+              setCurrentStation(fallback);
               setIsPlaying(true);
+              if (event.target.loadVideoById) {
+                event.target.loadVideoById(fallback.id);
+              }
             }
           }
           // YT.PlayerState.PLAYING = 1

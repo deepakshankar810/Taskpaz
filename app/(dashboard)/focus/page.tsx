@@ -55,6 +55,7 @@ function formatTime(seconds: number) {
 
 import { BreathingGuide } from '@/components/focus/BreathingGuide';
 import { Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function FocusPage() {
   const [timerState, setTimerState] = useState(timerStore.getState());
@@ -66,8 +67,26 @@ export default function FocusPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string>('none');
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const activeTasks = tasks.filter(t => t.status !== 'completed');
-  const selectedTask = tasks.find(t => t.id === selectedTaskId);
+  const activeTasks = tasks.filter((t: any) => t.status !== 'completed');
+  const selectedTask = tasks.find((t: any) => t.id === selectedTaskId);
+
+  const handleTaskChange = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    if (taskId !== 'none') {
+      const task = tasks.find((t: any) => t.id === taskId);
+      if (task) {
+        setCustomLabel(task.title);
+        if (!timerState.isRunning) {
+           timerStore.setTimer(timerState.totalSeconds > 0 ? timerState.totalSeconds : 25 * 60, task.title, 'custom');
+        }
+      }
+    } else {
+      setCustomLabel('Focus Session');
+      if (!timerState.isRunning) {
+         timerStore.setTimer(timerState.totalSeconds > 0 ? timerState.totalSeconds : 25 * 60, 'Focus Session', 'custom');
+      }
+    }
+  };
 
   const { user } = useAuth();
   const { vibe, setVibe, availableVibes } = useThemeAccent();
@@ -132,11 +151,11 @@ export default function FocusPage() {
               completedAt: saved.completed_at,
               taskId: saved.task_id,
             };
-            setSessionLog(prev => [entry, ...prev].slice(0, 50));
+            setSessionLog((prev: any) => [entry, ...prev].slice(0, 50));
 
             // Update specific task if linked
             if (selectedTaskId && selectedTaskId !== 'none') {
-                const task = tasks.find(t => t.id === selectedTaskId);
+                const task = tasks.find((t: any) => t.id === selectedTaskId);
                 if (task) {
                     const newTimeSpent = (task.timeSpent || 0) + s.totalSeconds;
                     await updateTask(task.id, { timeSpent: newTimeSpent });
@@ -154,7 +173,7 @@ export default function FocusPage() {
                 completedAt: new Date().toISOString(),
                 taskId: selectedTaskId === 'none' ? undefined : selectedTaskId,
             };
-            setSessionLog(prev => {
+            setSessionLog((prev: any) => {
                 const newLog = [entry, ...prev].slice(0, 50);
                 localStorage.setItem(SESSION_LOG_KEY, JSON.stringify(newLog));
                 return newLog;
@@ -182,7 +201,7 @@ export default function FocusPage() {
   const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
   
   // Stats calculations
-  const totalFocusedAllTime = sessionLog.reduce((acc, s) => acc + s.minutes, 0);
+  const totalFocusedAllTime = sessionLog.reduce((acc: any, s: any) => acc + s.minutes, 0);
   
   const isDateSelected = (dateStr: string) => {
     if (!dateStr) return false;
@@ -193,8 +212,8 @@ export default function FocusPage() {
   };
 
   const selectedDateFocused = sessionLog
-    .filter(s => isDateSelected(s.completedAt!))
-    .reduce((acc, s) => acc + s.minutes, 0);
+    .filter((s: any) => isDateSelected(s.completedAt!))
+    .reduce((acc: any, s: any) => acc + s.minutes, 0);
 
   const navigateDate = (days: number) => {
     const next = new Date(selectedDate);
@@ -213,7 +232,7 @@ export default function FocusPage() {
     if (sessionLog.length === 0) return 0;
     
     // 1. Get unique sorted dates (newest first)
-    const dates = Array.from(new Set(sessionLog.filter(s => s.completedAt).map(s => s.completedAt.split('T')[0]))).sort().reverse();
+    const dates = Array.from(new Set(sessionLog.filter((s: any) => s.completedAt).map((s: any) => s.completedAt.split('T')[0]))).sort().reverse();
     
     let streak = 0;
     const todayStr = new Date().toISOString().split('T')[0];
@@ -227,11 +246,11 @@ export default function FocusPage() {
     }
 
     // Iterate through dates to find consecutive days
-    let current = new Date(dates[0]);
+    let current = new Date(dates[0] as string);
     streak = 1;
 
     for (let i = 1; i < dates.length; i++) {
-        const nextDate = new Date(dates[i]);
+        const nextDate = new Date(dates[i] as string);
         const diff = Math.round((current.getTime() - nextDate.getTime()) / (1000 * 3600 * 24));
         
         if (diff === 1) {
@@ -251,7 +270,7 @@ export default function FocusPage() {
     if (!user) return;
     try {
         await deleteFocusSession(id);
-        setSessionLog(prev => prev.filter(s => s.id !== id));
+        setSessionLog((prev: any) => prev.filter((s: any) => s.id !== id));
     } catch (err) {
         console.error('Failed to delete session:', err);
     }
@@ -259,7 +278,7 @@ export default function FocusPage() {
 
   const getTaskTitle = (taskId?: string) => {
     if (!taskId || taskId === 'none') return null;
-    return tasks.find(t => t.id === taskId)?.title;
+    return tasks.find((t: any) => t.id === taskId)?.title;
   };
 
   return (
@@ -296,13 +315,13 @@ export default function FocusPage() {
               {!zenMode && (
                 <div className="w-full max-w-xs space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-center block">Focus Target</Label>
-                    <Select value={selectedTaskId} onValueChange={setSelectedTaskId}>
+                    <Select value={selectedTaskId} onValueChange={handleTaskChange}>
                         <SelectTrigger className="w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
                             <SelectValue placeholder="Select a task..." />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="none">General Focus</SelectItem>
-                            {activeTasks.map(task => (
+                            {activeTasks.map((task: any) => (
                                 <SelectItem key={task.id} value={task.id}>
                                     {task.title}
                                 </SelectItem>
@@ -325,7 +344,11 @@ export default function FocusPage() {
                 {isBreak && isRunning ? (
                     <BreathingGuide timeLeft={timeLeft} />
                 ) : (
-                    <div className="relative">
+                    <motion.div 
+                        className="relative"
+                        animate={isRunning ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    >
                         <svg width="320" height="320" className="-rotate-90">
                         <circle
                             cx="160" cy="160" r={140}
@@ -360,7 +383,7 @@ export default function FocusPage() {
                         </span>
                         {!zenMode && <span className="text-slate-400 text-xs mt-2 font-medium">{Math.round(progress)}% complete</span>}
                         </div>
-                    </div>
+                    </motion.div>
                 )}
               </div>
 
@@ -407,7 +430,7 @@ export default function FocusPage() {
                   <Label className="text-xs text-slate-500 uppercase tracking-wider">Label</Label>
                   <Input
                     value={customLabel}
-                    onChange={e => setCustomLabel(e.target.value)}
+                    onChange={(e: any) => setCustomLabel(e.target.value)}
                     placeholder="e.g. Deep Work"
                   />
                 </div>
@@ -415,18 +438,18 @@ export default function FocusPage() {
                   <Label className="text-xs text-slate-500 uppercase tracking-wider">Duration (minutes)</Label>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0"
-                      onClick={() => setCustomMinutes(m => Math.max(1, m - 5))}>
+                      onClick={() => setCustomMinutes((m: any) => Math.max(1, m - 5))}>
                       <Minus className="h-3 w-3" />
                     </Button>
                     <Input
                       type="number"
                       value={customMinutes}
-                      onChange={e => setCustomMinutes(Number(e.target.value))}
+                      onChange={(e: any) => setCustomMinutes(Number(e.target.value))}
                       min={1}
                       className="text-center h-9"
                     />
                     <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0"
-                      onClick={() => setCustomMinutes(m => m + 5)}>
+                      onClick={() => setCustomMinutes((m: any) => m + 5)}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
@@ -481,7 +504,7 @@ export default function FocusPage() {
                 
                 <div 
                     className="relative flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
-                    onClick={(e) => {
+                    onClick={(e: any) => {
                         const input = e.currentTarget.querySelector('input');
                         if (input && 'showPicker' in input) input.showPicker();
                     }}
@@ -494,7 +517,7 @@ export default function FocusPage() {
                         type="date" 
                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full pointer-events-none"
                         value={selectedDate.toLocaleDateString('en-CA')}
-                        onChange={(e) => {
+                        onChange={(e: any) => {
                             if (e.target.value) {
                                 const [y, m, d] = e.target.value.split('-').map(Number);
                                 setSelectedDate(new Date(y, m - 1, d));
