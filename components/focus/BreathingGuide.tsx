@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function BreathingGuide({ timeLeft }: { timeLeft: number }) {
-    const [phase, setPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
+    const [phase, setPhase] = useState<'inhale' | 'holdIn' | 'exhale' | 'holdOut'>('inhale');
 
     useEffect(() => {
         const timer = setInterval(() => {
             setPhase((prev) => {
-                if (prev === 'inhale') return 'hold';
-                if (prev === 'hold') return 'exhale';
+                if (prev === 'inhale') return 'holdIn';
+                if (prev === 'holdIn') return 'exhale';
+                if (prev === 'exhale') return 'holdOut';
                 return 'inhale';
             });
         }, 4000); // 4s for each phase
@@ -20,8 +21,9 @@ export function BreathingGuide({ timeLeft }: { timeLeft: number }) {
 
     const text = {
         inhale: 'Breathe In',
-        hold: 'Hold',
-        exhale: 'Breathe Out'
+        holdIn: 'Hold',
+        exhale: 'Breathe Out',
+        holdOut: 'Hold'
     };
 
     return (
@@ -30,8 +32,8 @@ export function BreathingGuide({ timeLeft }: { timeLeft: number }) {
                 {/* Background pulse */}
                 <motion.div
                     animate={{
-                        scale: phase === 'inhale' ? 1.5 : phase === 'hold' ? 1.5 : 1,
-                        opacity: phase === 'inhale' ? 0.3 : 0.1
+                        scale: (phase === 'inhale' || phase === 'holdIn') ? 1.5 : 1,
+                        opacity: (phase === 'inhale' || phase === 'holdIn') ? 0.3 : 0.1
                     }}
                     transition={{ duration: 4, ease: "easeInOut" }}
                     className="absolute w-44 h-44 rounded-full bg-blue-400/20 blur-xl"
@@ -40,7 +42,7 @@ export function BreathingGuide({ timeLeft }: { timeLeft: number }) {
                 {/* Main Circle */}
                 <motion.div
                     animate={{
-                        scale: phase === 'inhale' ? 1.5 : phase === 'hold' ? 1.5 : 1,
+                        scale: (phase === 'inhale' || phase === 'holdIn') ? 1.5 : 1,
                     }}
                     transition={{ duration: 4, ease: "easeInOut" }}
                     className="w-40 h-40 rounded-full border-4 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.5)] flex items-center justify-center bg-white dark:bg-slate-900 z-10"
@@ -66,7 +68,7 @@ export function BreathingGuide({ timeLeft }: { timeLeft: number }) {
                 {/* Outer Ring */}
                 <motion.div
                     animate={{
-                        scale: phase === 'inhale' ? 1.4 : phase === 'hold' ? 1.4 : 1,
+                        scale: (phase === 'inhale' || phase === 'holdIn') ? 1.4 : 1,
                         rotate: 360
                     }}
                     transition={{ 

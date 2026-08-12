@@ -346,8 +346,8 @@ export default function FocusPage() {
                 ) : (
                     <motion.div 
                         className="relative"
-                        animate={isRunning ? { scale: [1, 1.05, 1] } : { scale: 1 }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        animate={isRunning ? { scale: [1, 1.03, 1] } : { scale: 1 }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
                     >
                         <svg width="320" height="320" className="-rotate-90">
                         <circle

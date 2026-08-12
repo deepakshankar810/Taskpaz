@@ -11,10 +11,10 @@ interface Station {
 
 const INITIAL_STATIONS: Station[] = [
   {
-    id: 'jfKfPfyJRdk',
+    id: 'zFhfksj_mco',
     name: 'Ambient Loop Music',
     author: 'Focus Radio',
-    thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/0.jpg',
+    thumbnail: 'https://img.youtube.com/vi/zFhfksj_mco/0.jpg',
   },
 ];
 
