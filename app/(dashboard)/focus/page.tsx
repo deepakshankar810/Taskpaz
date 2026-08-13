@@ -372,33 +372,7 @@ export default function FocusPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    {/* Editable session name */}
-                    <div className="flex items-center gap-2">
-                      {isEditingLabel ? (
-                        <div className="flex items-center gap-1.5 w-full">
-                          <Input
-                            value={editLabelValue}
-                            onChange={(e: any) => setEditLabelValue(e.target.value)}
-                            onKeyDown={(e: any) => { if (e.key === 'Enter') handleSaveLabel(); if (e.key === 'Escape') setIsEditingLabel(false); }}
-                            placeholder="Session name..."
-                            className="h-8 text-sm"
-                            autoFocus
-                          />
-                          <Button size="sm" variant="ghost" className="h-8 px-2 text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={handleSaveLabel}>
-                            <CheckCircle2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={handleStartEditLabel}
-                          className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-left text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-blue-500 transition-all group"
-                        >
-                          <Type className="h-3.5 w-3.5 text-slate-300 group-hover:text-blue-400 transition-colors" />
-                          <span className="truncate">{customLabel}</span>
-                          <Pencil className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-slate-300" />
-                        </button>
-                      )}
-                    </div>
+
                 </div>
               )}
 
