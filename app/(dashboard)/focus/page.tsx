@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar, ChevronLeft, ChevronRight, Type } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 const PRESETS = [
   { label: 'Quick Focus', minutes: 15, icon: Flame, color: 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800' },
@@ -55,7 +55,6 @@ function formatTime(seconds: number) {
 
 import { BreathingGuide } from '@/components/focus/BreathingGuide';
 import { Eye, EyeOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FocusPage() {
   const [timerState, setTimerState] = useState(timerStore.getState());
@@ -63,9 +62,7 @@ export default function FocusPage() {
   const [customLabel, setCustomLabel] = useState('Focus Session');
   const [sessionLog, setSessionLog] = useState<SessionEntry[]>([]);
   const [zenMode, setZenMode] = useState(false);
-  const [breathPhase, setBreathPhase] = useState<'inhale' | 'holdIn' | 'exhale' | 'holdOut'>('inhale');
-  const [isEditingLabel, setIsEditingLabel] = useState(false);
-  const [editLabelValue, setEditLabelValue] = useState('');
+
   const { tasks } = useTasksContext();
   const [selectedTaskId, setSelectedTaskId] = useState<string>('none');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -93,46 +90,6 @@ export default function FocusPage() {
 
   const { user } = useAuth();
   const { vibe, setVibe, availableVibes } = useThemeAccent();
-
-  // Breathing cycle that runs while the timer is active
-  useEffect(() => {
-    if (!timerState.isRunning) return;
-    setBreathPhase('inhale');
-    const timer = setInterval(() => {
-      setBreathPhase((prev) => {
-        if (prev === 'inhale') return 'holdIn';
-        if (prev === 'holdIn') return 'exhale';
-        if (prev === 'exhale') return 'holdOut';
-        return 'inhale';
-      });
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [timerState.isRunning]);
-
-  const breathText: Record<string, string> = {
-    inhale: 'Breathe In',
-    holdIn: 'Hold',
-    exhale: 'Breathe Out',
-    holdOut: 'Hold',
-  };
-
-  const handleStartEditLabel = () => {
-    setEditLabelValue(customLabel);
-    setIsEditingLabel(true);
-  };
-
-  const handleSaveLabel = () => {
-    const newLabel = editLabelValue.trim() || 'Focus Session';
-    setCustomLabel(newLabel);
-    setIsEditingLabel(false);
-    if (!timerState.isRunning) {
-      timerStore.setTimer(
-        timerState.totalSeconds > 0 ? timerState.totalSeconds : 25 * 60,
-        newLabel,
-        'custom'
-      );
-    }
-  };
 
   const lastProcessedSession = useRef<string | null>(null);
 
@@ -241,8 +198,7 @@ export default function FocusPage() {
 
   const { timeLeft, totalSeconds, isRunning, label } = timerState;
   const isBreak = label.toLowerCase().includes('break');
-  const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
-  const breathScale = (breathPhase === 'inhale' || breathPhase === 'holdIn') ? 1.05 : 1;
+
   
   // Stats calculations
   const totalFocusedAllTime = sessionLog.reduce((acc: any, s: any) => acc + s.minutes, 0);
@@ -384,79 +340,17 @@ export default function FocusPage() {
               )}
 
 
+
               {/* Timer with integrated breathing guide */}
               <div className="relative flex flex-col items-center">
-                {isBreak && isRunning ? (
-                    <BreathingGuide timeLeft={timeLeft} />
-                ) : (
-                    <motion.div 
-                        className="relative"
-                        animate={{ scale: isRunning ? breathScale : 1 }}
-                        transition={{ duration: 4, ease: "easeInOut" }}
-                    >
-                        {/* Breathing glow pulse behind the ring */}
-                        {isRunning && (
-                          <motion.div
-                            className="absolute inset-0 rounded-full bg-blue-400/10 blur-2xl"
-                            animate={{
-                              scale: (breathPhase === 'inhale' || breathPhase === 'holdIn') ? 1.3 : 1,
-                              opacity: (breathPhase === 'inhale' || breathPhase === 'holdIn') ? 0.4 : 0.1,
-                            }}
-                            transition={{ duration: 4, ease: "easeInOut" }}
-                          />
-                        )}
-                        <svg width="320" height="320" className="-rotate-90">
-                        <circle
-                            cx="160" cy="160" r={140}
-                            stroke="currentColor"
-                            strokeWidth="10"
-                            fill="none"
-                            className="text-slate-100 dark:text-slate-800/50"
-                        />
-                        <circle
-                            cx="160" cy="160" r={140}
-                            stroke="url(#focusGrad)"
-                            strokeWidth="10"
-                            fill="none"
-                            strokeLinecap="round"
-                            strokeDasharray={2 * Math.PI * 140}
-                            strokeDashoffset={2 * Math.PI * 140 * (1 - progress / 100)}
-                            style={{ transition: 'stroke-dashoffset 1s linear' }}
-                        />
-                        <defs>
-                            <linearGradient id="focusGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#6366f1" />
-                            <stop offset="100%" stopColor="#3b82f6" />
-                            </linearGradient>
-                        </defs>
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={`text-[12px] font-bold tracking-[0.25em] uppercase mb-2 transition-colors ${zenMode ? 'text-blue-500' : 'text-slate-400'}`}>
-                            {label}
-                        </span>
-                        <span className={`text-6xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                            {formatTime(timeLeft)}
-                        </span>
-                        {/* Breathing text shown while running */}
-                        {isRunning ? (
-                          <AnimatePresence mode="wait">
-                            <motion.span
-                              key={breathPhase}
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -6 }}
-                              transition={{ duration: 0.4 }}
-                              className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-500/80 mt-2"
-                            >
-                              {breathText[breathPhase]}
-                            </motion.span>
-                          </AnimatePresence>
-                        ) : (
-                          !zenMode && <span className="text-slate-400 text-xs mt-2 font-medium">{Math.round(progress)}% complete</span>
-                        )}
-                        </div>
-                    </motion.div>
-                )}
+                <BreathingGuide
+                    timeLeft={timeLeft}
+                    totalSeconds={totalSeconds}
+                    label={label}
+                    isRunning={isRunning}
+                    isBreak={isBreak}
+                    zenMode={zenMode}
+                />
               </div>
 
               {/* Controls */}
