@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Play, Pause, RotateCcw, Plus, Minus, Flame, Coffee, BookOpen, Code2, Dumbbell, Music, Pencil, CheckCircle2, Trash2, BarChart3, TrendingUp, Calendar, ChevronLeft, ChevronRight, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,7 +55,7 @@ function formatTime(seconds: number) {
 
 import { BreathingGuide } from '@/components/focus/BreathingGuide';
 import { Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FocusPage() {
   const [timerState, setTimerState] = useState(timerStore.getState());
@@ -63,6 +63,9 @@ export default function FocusPage() {
   const [customLabel, setCustomLabel] = useState('Focus Session');
   const [sessionLog, setSessionLog] = useState<SessionEntry[]>([]);
   const [zenMode, setZenMode] = useState(false);
+  const [breathPhase, setBreathPhase] = useState<'inhale' | 'holdIn' | 'exhale' | 'holdOut'>('inhale');
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editLabelValue, setEditLabelValue] = useState('');
   const { tasks } = useTasksContext();
   const [selectedTaskId, setSelectedTaskId] = useState<string>('none');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -90,6 +93,46 @@ export default function FocusPage() {
 
   const { user } = useAuth();
   const { vibe, setVibe, availableVibes } = useThemeAccent();
+
+  // Breathing cycle that runs while the timer is active
+  useEffect(() => {
+    if (!timerState.isRunning) return;
+    setBreathPhase('inhale');
+    const timer = setInterval(() => {
+      setBreathPhase((prev) => {
+        if (prev === 'inhale') return 'holdIn';
+        if (prev === 'holdIn') return 'exhale';
+        if (prev === 'exhale') return 'holdOut';
+        return 'inhale';
+      });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [timerState.isRunning]);
+
+  const breathText: Record<string, string> = {
+    inhale: 'Breathe In',
+    holdIn: 'Hold',
+    exhale: 'Breathe Out',
+    holdOut: 'Hold',
+  };
+
+  const handleStartEditLabel = () => {
+    setEditLabelValue(customLabel);
+    setIsEditingLabel(true);
+  };
+
+  const handleSaveLabel = () => {
+    const newLabel = editLabelValue.trim() || 'Focus Session';
+    setCustomLabel(newLabel);
+    setIsEditingLabel(false);
+    if (!timerState.isRunning) {
+      timerStore.setTimer(
+        timerState.totalSeconds > 0 ? timerState.totalSeconds : 25 * 60,
+        newLabel,
+        'custom'
+      );
+    }
+  };
 
   const lastProcessedSession = useRef<string | null>(null);
 
@@ -199,6 +242,7 @@ export default function FocusPage() {
   const { timeLeft, totalSeconds, isRunning, label } = timerState;
   const isBreak = label.toLowerCase().includes('break');
   const progress = totalSeconds > 0 ? ((totalSeconds - timeLeft) / totalSeconds) * 100 : 0;
+  const breathScale = (breathPhase === 'inhale' || breathPhase === 'holdIn') ? 1.05 : 1;
   
   // Stats calculations
   const totalFocusedAllTime = sessionLog.reduce((acc: any, s: any) => acc + s.minutes, 0);
@@ -311,9 +355,9 @@ export default function FocusPage() {
             )}
 
             <CardContent className="flex flex-col items-center gap-4 py-6">
-              {/* Task Selector */}
+              {/* Task Selector + Editable Label */}
               {!zenMode && (
-                <div className="w-full max-w-xs space-y-2">
+                <div className="w-full max-w-xs space-y-3">
                     <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest text-center block">Focus Target</Label>
                     <Select value={selectedTaskId} onValueChange={handleTaskChange}>
                         <SelectTrigger className="w-full bg-white/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800">
@@ -328,6 +372,33 @@ export default function FocusPage() {
                             ))}
                         </SelectContent>
                     </Select>
+                    {/* Editable session name */}
+                    <div className="flex items-center gap-2">
+                      {isEditingLabel ? (
+                        <div className="flex items-center gap-1.5 w-full">
+                          <Input
+                            value={editLabelValue}
+                            onChange={(e: any) => setEditLabelValue(e.target.value)}
+                            onKeyDown={(e: any) => { if (e.key === 'Enter') handleSaveLabel(); if (e.key === 'Escape') setIsEditingLabel(false); }}
+                            placeholder="Session name..."
+                            className="h-8 text-sm"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="ghost" className="h-8 px-2 text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={handleSaveLabel}>
+                            <CheckCircle2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleStartEditLabel}
+                          className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-left text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-blue-500 transition-all group"
+                        >
+                          <Type className="h-3.5 w-3.5 text-slate-300 group-hover:text-blue-400 transition-colors" />
+                          <span className="truncate">{customLabel}</span>
+                          <Pencil className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-slate-300" />
+                        </button>
+                      )}
+                    </div>
                 </div>
               )}
 
@@ -339,16 +410,27 @@ export default function FocusPage() {
               )}
 
 
-              {/* Breathing Guide / Timer */}
+              {/* Timer with integrated breathing guide */}
               <div className="relative flex flex-col items-center">
                 {isBreak && isRunning ? (
                     <BreathingGuide timeLeft={timeLeft} />
                 ) : (
                     <motion.div 
                         className="relative"
-                        animate={isRunning ? { scale: [1, 1.03, 1] } : { scale: 1 }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                        animate={{ scale: isRunning ? breathScale : 1 }}
+                        transition={{ duration: 4, ease: "easeInOut" }}
                     >
+                        {/* Breathing glow pulse behind the ring */}
+                        {isRunning && (
+                          <motion.div
+                            className="absolute inset-0 rounded-full bg-blue-400/10 blur-2xl"
+                            animate={{
+                              scale: (breathPhase === 'inhale' || breathPhase === 'holdIn') ? 1.3 : 1,
+                              opacity: (breathPhase === 'inhale' || breathPhase === 'holdIn') ? 0.4 : 0.1,
+                            }}
+                            transition={{ duration: 4, ease: "easeInOut" }}
+                          />
+                        )}
                         <svg width="320" height="320" className="-rotate-90">
                         <circle
                             cx="160" cy="160" r={140}
@@ -381,7 +463,23 @@ export default function FocusPage() {
                         <span className={`text-6xl font-mono font-bold tabular-nums tracking-tight ${isRunning ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                             {formatTime(timeLeft)}
                         </span>
-                        {!zenMode && <span className="text-slate-400 text-xs mt-2 font-medium">{Math.round(progress)}% complete</span>}
+                        {/* Breathing text shown while running */}
+                        {isRunning ? (
+                          <AnimatePresence mode="wait">
+                            <motion.span
+                              key={breathPhase}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -6 }}
+                              transition={{ duration: 0.4 }}
+                              className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-500/80 mt-2"
+                            >
+                              {breathText[breathPhase]}
+                            </motion.span>
+                          </AnimatePresence>
+                        ) : (
+                          !zenMode && <span className="text-slate-400 text-xs mt-2 font-medium">{Math.round(progress)}% complete</span>
+                        )}
                         </div>
                     </motion.div>
                 )}
