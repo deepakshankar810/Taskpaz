@@ -1,4 +1,4 @@
-# Taskpaz — Your AI-Powered Mindful Productivity Sanctuary
+# Taskpaz — Your AI-Powered Mindful Productivity App
 
 **Taskpaz** is a premium, high-performance productivity platform designed to bridge the gap between output and well-being. Built with speed, aesthetics, and mental health in mind, Taskpaz provides a unified dashboard for tasks, projects, finance tracking, and mindful reflection.
 
