@@ -25,6 +25,8 @@ create table if not exists tasks (
   time_spent integer default 0,
   tags text[] default '{}',
   shared_with jsonb default '[]'::jsonb,
+  value_amount decimal(12,2),
+  savings_goal_id uuid references savings_goals(id) on delete set null,
   completed_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now()

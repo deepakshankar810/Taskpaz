@@ -21,6 +21,8 @@ const mapTaskRow = (data: any): Task => ({
   timeSpent: data.time_spent,
   tags: data.tags || [],
   sharedWith: data.shared_with || [],
+  valueAmount: data.value_amount ? Number(data.value_amount) : undefined,
+  savingsGoalId: data.savings_goal_id,
 });
 
 export const createTask = async (userId: string, input: CreateTaskInput, id?: string): Promise<Task> => {
@@ -41,8 +43,9 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
     
     // Ensure projectId is either a valid UUID or null (never an empty string)
     const cleanProjectId = (input.projectId && input.projectId.trim().length === 36) ? input.projectId : null;
+    const cleanSavingsGoalId = (input.savingsGoalId && input.savingsGoalId.trim().length === 36) ? input.savingsGoalId : null;
 
-    const newTaskData = {
+    const newTaskData: any = {
       id: (id && id.length === 36) ? id : undefined,
       user_id: userId,
       title: (input.title || 'Untitled Task').trim(),
@@ -56,7 +59,8 @@ export const createTask = async (userId: string, input: CreateTaskInput, id?: st
       recurring_pattern: input.recurringPattern || 'none',
       time_spent: 0,
       tags: cleanTags,
-      // shared_with: input.sharedWith || [], // Removed until migration is run
+      value_amount: input.valueAmount ? Number(input.valueAmount) : null,
+      savings_goal_id: cleanSavingsGoalId,
     };
 
     console.log('[createTask] Sanitized payload:', newTaskData);
@@ -154,6 +158,10 @@ export const updateTask = async (taskId: string, updates: UpdateTaskInput): Prom
     if (updates.timeSpent !== undefined) updateData.time_spent = updates.timeSpent;
     if (updates.tags !== undefined) {
       updateData.tags = (updates.tags || []).filter(tag => typeof tag === 'string' && tag.trim() !== '');
+    }
+    if (updates.valueAmount !== undefined) updateData.value_amount = updates.valueAmount ? Number(updates.valueAmount) : null;
+    if (updates.savingsGoalId !== undefined) {
+      updateData.savings_goal_id = (updates.savingsGoalId && updates.savingsGoalId.trim().length === 36) ? updates.savingsGoalId : null;
     }
     // if (updates.sharedWith !== undefined) updateData.shared_with = updates.sharedWith;
 

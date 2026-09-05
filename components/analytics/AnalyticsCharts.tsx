@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { ProductivityHeatmap } from './ProductivityHeatmap';
 import { MoodProductivityCorrelation } from './MoodProductivityCorrelation';
 import { FinancialForecasting } from './FinancialForecasting';
+import { SymphonyInsights } from './SymphonyInsights';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 const PRIORITY_COLORS = {
@@ -29,6 +30,8 @@ const PRIORITY_COLORS = {
 };
 
 interface AnalyticsChartsProps {
+    tasks?: any[];
+    journalEntries?: any[];
     taskTrendData: any[];
     priorityData: any[];
     categoryData: any[];
@@ -43,6 +46,8 @@ interface AnalyticsChartsProps {
 }
 
 export default function AnalyticsCharts({
+    tasks = [],
+    journalEntries = [],
     taskTrendData,
     priorityData,
     categoryData,
@@ -63,6 +68,9 @@ export default function AnalyticsCharts({
 
     return (
         <div className="space-y-10">
+            {/* Symphony Insights AI Coaching & Correlation Engine */}
+            <SymphonyInsights tasks={tasks} journalEntries={journalEntries} />
+
             {/* Top Stats Overview */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card>

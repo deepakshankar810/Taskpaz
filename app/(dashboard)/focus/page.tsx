@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as timerStore from '@/lib/focusTimerStore';
 import { FocusMusicPlayer } from '@/components/focus/FocusMusicPlayer';
+import { ZenSoundscapeMixer } from '@/components/focus/ZenSoundscapeMixer';
 import { useTasksContext } from '@/components/providers/TasksProvider';
 import { WellnessTips } from '@/components/focus/WellnessTips';
 import { updateTask } from '@/lib/db/tasks';
@@ -455,7 +456,8 @@ export default function FocusPage() {
         <div className="space-y-6">
           <WellnessTips />
           
-          <div className="transition-all duration-700">
+          <div className="transition-all duration-700 space-y-6">
+            <ZenSoundscapeMixer />
             <FocusMusicPlayer />
           </div>
           

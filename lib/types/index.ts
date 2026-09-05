@@ -35,6 +35,8 @@ export interface Task {
   recurringPattern?: 'none' | 'daily' | 'weekly' | 'monthly';
   timeSpent?: number;
   sharedWith?: string[];
+  valueAmount?: number;
+  savingsGoalId?: string;
 }
 
 export interface CreateTaskInput {
@@ -48,11 +50,15 @@ export interface CreateTaskInput {
   orderIndex?: number;
   recurringPattern?: 'none' | 'daily' | 'weekly' | 'monthly';
   sharedWith?: string[];
+  valueAmount?: number;
+  savingsGoalId?: string;
 }
 
 export interface UpdateTaskInput extends Partial<CreateTaskInput> {
   status?: TaskStatus;
   timeSpent?: number;
+  valueAmount?: number;
+  savingsGoalId?: string;
 }
 
 export interface Project {

@@ -159,6 +159,8 @@ export default function AnalyticsPage() {
       </div>
 
       <AnalyticsCharts
+        tasks={tasks}
+        journalEntries={journalEntries}
         taskTrendData={taskTrendData}
         priorityData={priorityData}
         categoryData={categoryData}

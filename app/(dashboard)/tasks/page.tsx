@@ -13,6 +13,9 @@ import { TaskForm } from '@/components/task/TaskForm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar } from '@/components/ui/calendar';
 import { KanbanBoard } from '@/components/task/KanbanBoard';
+import { EisenhowerMatrix } from '@/components/task/EisenhowerMatrix';
+import { CoinCelebration } from '@/components/task/CoinCelebration';
+import { useFinanceContext } from '@/components/providers/FinanceProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImportExport } from '@/components/task/ImportExport';
@@ -31,6 +34,7 @@ function TasksContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const { tasks, loading, error, addOptimisticTask, removeOptimisticTask, optimisticUpdateTask } = useTasksContext();
+  const { savingsGoals, setSavingsGoals } = useFinanceContext();
 
   // State
   const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
@@ -39,6 +43,8 @@ function TasksContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("list");
+  const [coinTrigger, setCoinTrigger] = useState(false);
+  const [coinAmount, setCoinAmount] = useState<number | undefined>(undefined);
 
   const searchQuery = searchParams?.get('q')?.toLowerCase() || '';
 
@@ -157,9 +163,45 @@ function TasksContent() {
 
   const handleCompleteTask = async (taskId: string) => {
     try {
+      const task = tasks.find(t => t.id === taskId);
+
       // 1. Instant UI update
       optimisticUpdateTask(taskId, { status: 'completed', completedAt: new Date() });
-      toast.success('Task completed!');
+
+      if (task?.valueAmount && task.valueAmount > 0) {
+        setCoinAmount(task.valueAmount);
+        setCoinTrigger(true);
+
+        if (user) {
+          try {
+            const { addTransaction, updateSavingsGoal } = await import('@/lib/db/finance');
+            await addTransaction(user.id, {
+              amount: task.valueAmount,
+              type: 'income',
+              category: 'Habit Savings',
+              description: `Save-by-Doing Reward: ${task.title}`,
+              date: new Date()
+            });
+
+            if (task.savingsGoalId) {
+              const targetGoal = savingsGoals.find(g => g.id === task.savingsGoalId);
+              if (targetGoal) {
+                const newAmt = (targetGoal.currentAmount || 0) + task.valueAmount;
+                await updateSavingsGoal(targetGoal.id, {
+                  currentAmount: newAmt,
+                  isCompleted: newAmt >= targetGoal.targetAmount
+                });
+                setSavingsGoals(prev => prev.map(g => g.id === targetGoal.id ? { ...g, currentAmount: newAmt } : g));
+              }
+            }
+          } catch (err) {
+            console.error('Failed to log habit reward:', err);
+          }
+        }
+        toast.success(`Task completed! +$${task.valueAmount.toFixed(2)} added to Savings! 🎉`);
+      } else {
+        toast.success('Task completed!');
+      }
 
       // 2. Background Server Sync
       const { completeTask } = await import('@/lib/db/tasks');
@@ -167,7 +209,6 @@ function TasksContent() {
     } catch (error) {
       console.error('Complete task error:', error);
       toast.error('Failed to update task.');
-      // Ideally revert optimistic update here
     }
   };
 
@@ -205,6 +246,7 @@ function TasksContent() {
 
   return (
     <div className="space-y-6 p-6 md:p-10 lg:p-14">
+      <CoinCelebration trigger={coinTrigger} amount={coinAmount} onComplete={() => setCoinTrigger(false)} />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
@@ -265,9 +307,10 @@ function TasksContent() {
       </div>
 
       <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
+        <TabsList className="grid w-full max-w-xl grid-cols-4 mb-6">
           <TabsTrigger value="list">List View</TabsTrigger>
           <TabsTrigger value="board">Board View</TabsTrigger>
+          <TabsTrigger value="eisenhower">Eisenhower Matrix</TabsTrigger>
           <TabsTrigger value="calendar">Calendar View</TabsTrigger>
         </TabsList>
 
@@ -313,6 +356,29 @@ function TasksContent() {
             </div>
           ) : (
             <KanbanBoard 
+              tasks={filteredTasks}
+              onComplete={handleCompleteTask}
+              onDelete={handleDeleteTask}
+              onEdit={openEditModal}
+            />
+          )}
+        </TabsContent>
+
+        {/* EISENHOWER MATRIX VIEW */}
+        <TabsContent value="eisenhower">
+          {loading ? (
+            <div className="grid md:grid-cols-2 gap-6">
+              {Array(4).fill(0).map((_, i) => (
+                <div key={i} className="rounded-xl p-4 min-h-[300px] border bg-slate-50 dark:bg-slate-900/50">
+                  <Skeleton className="h-6 w-32 mb-4" />
+                  <div className="space-y-4">
+                    <TaskSkeleton />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EisenhowerMatrix
               tasks={filteredTasks}
               onComplete={handleCompleteTask}
               onDelete={handleDeleteTask}

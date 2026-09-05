@@ -3,7 +3,7 @@
 import { Task } from '@/lib/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Tag, Trash2, CheckCircle, Pencil, RepeatIcon } from 'lucide-react';
+import { Clock, Tag, Trash2, CheckCircle, Pencil, RepeatIcon, PiggyBank } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { CategoryBadge } from './CategoryBadge';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +84,13 @@ export function TaskCard({ task, onComplete, onDelete, onEdit }: TaskCardProps) 
               {task.recurringPattern}
             </div>
           )}
+
+          {task.valueAmount && task.valueAmount > 0 ? (
+            <div className="flex items-center text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded border border-emerald-200 dark:border-emerald-800" title="Habit Savings Reward">
+              <PiggyBank className="w-3.5 h-3.5 mr-1 text-emerald-500" />
+              +${task.valueAmount.toFixed(2)} Savings
+            </div>
+          ) : null}
         </div>
       </CardContent>
       <CardFooter className="px-5 py-3 bg-slate-50/50 dark:bg-slate-900/30 flex justify-end">
