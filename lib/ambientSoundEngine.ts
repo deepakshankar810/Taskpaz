@@ -1,6 +1,6 @@
 // Web Audio API Procedural Ambient Sound Engine
 
-export type SoundType = 'rain' | 'ocean' | 'brownNoise' | 'forest' | 'binaural';
+export type SoundType = 'rain' | 'ocean' | 'brownNoise' | 'forest' | 'binaural' | 'fire' | 'stream';
 
 interface SoundChannel {
   node: AudioNode;
@@ -19,7 +19,12 @@ class AmbientSoundEngine {
     ['brownNoise', 0],
     ['forest', 0],
     ['binaural', 0],
+    ['fire', 0],
+    ['stream', 0],
   ]);
+
+  // Cached buffers for optimization
+  private buffers: Partial<Record<SoundType, AudioBuffer>> = {};
 
   private init() {
     if (!this.ctx && typeof window !== 'undefined') {
@@ -98,34 +103,50 @@ class AmbientSoundEngine {
       case 'binaural':
         stopFunc = this.createBinauralBeats(gainNode);
         break;
+      case 'fire':
+        stopFunc = this.createFire(gainNode);
+        break;
+      case 'stream':
+        stopFunc = this.createStream(gainNode);
+        break;
     }
 
     this.channels.set(type, { node: gainNode, gainNode, stopFunc });
   }
 
-  // --- Rain Generator (Filtered Pink Noise with Patter Modulation) ---
+  private getCachedBuffer(type: SoundType, generator: () => AudioBuffer): AudioBuffer {
+    if (!this.buffers[type]) {
+      this.buffers[type] = generator();
+    }
+    return this.buffers[type]!;
+  }
+
+  // --- Rain Generator ---
   private createRain(output: GainNode): () => void {
     if (!this.ctx) return () => {};
-    const bufferSize = 2 * this.ctx.sampleRate;
-    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const outputData = noiseBuffer.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    const buffer = this.getCachedBuffer('rain', () => {
+      const bufferSize = 2 * this.ctx!.sampleRate;
+      const noiseBuffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
+      const outputData = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
 
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.96900 * b2 + white * 0.1538520;
-      b3 = 0.86650 * b3 + white * 0.3104856;
-      b4 = 0.55000 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.0168980;
-      outputData[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-      outputData[i] *= 0.11;
-      b6 = white * 0.115926;
-    }
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        outputData[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+        outputData[i] *= 0.11;
+        b6 = white * 0.115926;
+      }
+      return noiseBuffer;
+    });
 
     const whiteNoise = this.ctx.createBufferSource();
-    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.buffer = buffer;
     whiteNoise.loop = true;
 
     const filter = this.ctx.createBiquadFilter();
@@ -136,27 +157,28 @@ class AmbientSoundEngine {
     filter.connect(output);
     whiteNoise.start();
 
-    return () => {
-      try { whiteNoise.stop(); } catch (e) {}
-    };
+    return () => { try { whiteNoise.stop(); } catch (e) {} };
   }
 
-  // --- Ocean Waves (Brown Noise modulated with slow LFO) ---
+  // --- Ocean Waves ---
   private createOcean(output: GainNode): () => void {
     if (!this.ctx) return () => {};
-    const bufferSize = 2 * this.ctx.sampleRate;
-    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = noiseBuffer.getChannelData(0);
-    let lastOut = 0.0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      data[i] = (lastOut + (0.02 * white)) / 1.02;
-      lastOut = data[i];
-      data[i] *= 3.5;
-    }
+    const buffer = this.getCachedBuffer('ocean', () => {
+      const bufferSize = 2 * this.ctx!.sampleRate;
+      const noiseBuffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      let lastOut = 0.0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        data[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = data[i];
+        data[i] *= 3.5;
+      }
+      return noiseBuffer;
+    });
 
     const source = this.ctx.createBufferSource();
-    source.buffer = noiseBuffer;
+    source.buffer = buffer;
     source.loop = true;
 
     const waveFilter = this.ctx.createBiquadFilter();
@@ -164,44 +186,41 @@ class AmbientSoundEngine {
     waveFilter.frequency.value = 400;
 
     const lfo = this.ctx.createOscillator();
-    lfo.frequency.value = 0.12; // wave frequency ~8.3 seconds per wave cycle
+    lfo.frequency.value = 0.12; 
 
     const lfoGain = this.ctx.createGain();
     lfoGain.gain.value = 300;
 
     lfo.connect(lfoGain);
     lfoGain.connect(waveFilter.frequency);
-
     source.connect(waveFilter);
     waveFilter.connect(output);
 
     source.start();
     lfo.start();
 
-    return () => {
-      try {
-        source.stop();
-        lfo.stop();
-      } catch (e) {}
-    };
+    return () => { try { source.stop(); lfo.stop(); } catch (e) {} };
   }
 
-  // --- Brown Noise (Deep focus rumble) ---
+  // --- Brown Noise ---
   private createBrownNoise(output: GainNode): () => void {
     if (!this.ctx) return () => {};
-    const bufferSize = 2 * this.ctx.sampleRate;
-    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = noiseBuffer.getChannelData(0);
-    let lastOut = 0.0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      data[i] = (lastOut + (0.02 * white)) / 1.02;
-      lastOut = data[i];
-      data[i] *= 2.5;
-    }
+    const buffer = this.getCachedBuffer('brownNoise', () => {
+      const bufferSize = 2 * this.ctx!.sampleRate;
+      const noiseBuffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      let lastOut = 0.0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        data[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = data[i];
+        data[i] *= 2.5;
+      }
+      return noiseBuffer;
+    });
 
     const source = this.ctx.createBufferSource();
-    source.buffer = noiseBuffer;
+    source.buffer = buffer;
     source.loop = true;
 
     const filter = this.ctx.createBiquadFilter();
@@ -212,23 +231,24 @@ class AmbientSoundEngine {
     filter.connect(output);
     source.start();
 
-    return () => {
-      try { source.stop(); } catch (e) {}
-    };
+    return () => { try { source.stop(); } catch (e) {} };
   }
 
-  // --- Forest Wind (Whistling bandpass noise) ---
+  // --- Forest Wind ---
   private createForestWind(output: GainNode): () => void {
     if (!this.ctx) return () => {};
-    const bufferSize = 2 * this.ctx.sampleRate;
-    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
+    const buffer = this.getCachedBuffer('forest', () => {
+      const bufferSize = 2 * this.ctx!.sampleRate;
+      const noiseBuffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      return noiseBuffer;
+    });
 
     const source = this.ctx.createBufferSource();
-    source.buffer = noiseBuffer;
+    source.buffer = buffer;
     source.loop = true;
 
     const filter = this.ctx.createBiquadFilter();
@@ -237,7 +257,7 @@ class AmbientSoundEngine {
     filter.Q.value = 3.0;
 
     const lfo = this.ctx.createOscillator();
-    lfo.frequency.value = 0.2; // wind gusts
+    lfo.frequency.value = 0.2; 
     const lfoGain = this.ctx.createGain();
     lfoGain.gain.value = 250;
 
@@ -250,31 +270,109 @@ class AmbientSoundEngine {
     source.start();
     lfo.start();
 
-    return () => {
-      try {
-        source.stop();
-        lfo.stop();
-      } catch (e) {}
-    };
+    return () => { try { source.stop(); lfo.stop(); } catch (e) {} };
   }
 
-  // --- Binaural Beats (Theta Waves: 200 Hz Left, 206 Hz Right = 6 Hz Theta Focus) ---
+  // --- Fireplace ---
+  private createFire(output: GainNode): () => void {
+    if (!this.ctx) return () => {};
+    const buffer = this.getCachedBuffer('fire', () => {
+      const bufferSize = 2 * this.ctx!.sampleRate;
+      const noiseBuffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        // Crackle effect by using sparse white noise bursts
+        const white = Math.random() * 2 - 1;
+        data[i] = Math.random() > 0.98 ? white * 3.5 : white * 0.1;
+      }
+      return noiseBuffer;
+    });
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800; // Warm fire sound
+    
+    // Add some random modulation to frequency for flicker
+    const lfo = this.ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 5; 
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 100;
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    source.connect(filter);
+    filter.connect(output);
+
+    source.start();
+    lfo.start();
+
+    return () => { try { source.stop(); lfo.stop(); } catch (e) {} };
+  }
+
+  // --- River Stream ---
+  private createStream(output: GainNode): () => void {
+    if (!this.ctx) return () => {};
+    const buffer = this.getCachedBuffer('stream', () => {
+      const bufferSize = 2 * this.ctx!.sampleRate;
+      const noiseBuffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        // Pink noise-ish for water stream
+        data[i] = (lastOut * 0.9) + (white * 0.1);
+        lastOut = data[i];
+      }
+      return noiseBuffer;
+    });
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 800;
+    filter.Q.value = 0.8;
+
+    const lfo = this.ctx.createOscillator();
+    lfo.frequency.value = 2; // Babbling brook speed
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 200;
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    source.connect(filter);
+    filter.connect(output);
+
+    source.start();
+    lfo.start();
+
+    return () => { try { source.stop(); lfo.stop(); } catch (e) {} };
+  }
+
+
+  // --- Binaural Beats ---
   private createBinauralBeats(output: GainNode): () => void {
     if (!this.ctx) return () => {};
 
     const oscLeft = this.ctx.createOscillator();
     const oscRight = this.ctx.createOscillator();
 
-    oscLeft.frequency.value = 200; // Base carrier tone
-    oscRight.frequency.value = 206; // +6Hz Theta Beat
-
-    const panLeft = this.ctx.createGain();
-    const panRight = this.ctx.createGain();
+    oscLeft.frequency.value = 200; 
+    oscRight.frequency.value = 206; 
 
     const merger = this.ctx.createChannelMerger(2);
 
-    oscLeft.connect(merger, 0, 0);  // Left channel
-    oscRight.connect(merger, 0, 1); // Right channel
+    oscLeft.connect(merger, 0, 0);  
+    oscRight.connect(merger, 0, 1); 
 
     merger.connect(output);
 

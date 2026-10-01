@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { CloudRain, Waves, Radio, Trees, Brain, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { CloudRain, Waves, Radio, Trees, Brain, Volume2, VolumeX, Sparkles, Flame, Droplets } from 'lucide-react';
 import { ambientEngine, SoundType } from '@/lib/ambientSoundEngine';
 import { AudioWaveformCanvas } from '@/components/focus/AudioWaveformCanvas';
 
@@ -14,21 +14,42 @@ const SOUND_PRESETS = [
     name: 'Deep Focus',
     icon: Brain,
     description: 'Brown noise + Theta waves for intense concentration',
-    mix: { brownNoise: 0.7, binaural: 0.5, rain: 0, ocean: 0, forest: 0 }
+    mix: { brownNoise: 0.7, binaural: 0.5, rain: 0, ocean: 0, forest: 0, fire: 0, stream: 0 }
   },
   {
     id: 'ocean_rain',
     name: 'Ocean Rain',
     icon: Waves,
     description: 'Calming rainfall & rolling ocean waves',
-    mix: { rain: 0.6, ocean: 0.5, brownNoise: 0, forest: 0, binaural: 0 }
+    mix: { rain: 0.6, ocean: 0.5, brownNoise: 0, forest: 0, binaural: 0, fire: 0, stream: 0 }
   },
   {
     id: 'zen_sanctuary',
     name: 'Zen Sanctuary',
     icon: Trees,
     description: 'Gentle forest breeze & binaural frequency',
-    mix: { forest: 0.6, binaural: 0.4, rain: 0.2, ocean: 0, brownNoise: 0 }
+    mix: { forest: 0.6, binaural: 0.4, rain: 0.2, ocean: 0, brownNoise: 0, fire: 0, stream: 0 }
+  },
+  {
+    id: 'cozy_cabin',
+    name: 'Cozy Cabin',
+    icon: Flame,
+    description: 'Warm crackling fire with gentle rain',
+    mix: { fire: 0.8, rain: 0.4, ocean: 0, brownNoise: 0, forest: 0, binaural: 0, stream: 0 }
+  },
+  {
+    id: 'river_flow',
+    name: 'Babbling Brook',
+    icon: Droplets,
+    description: 'Calm river stream with forest wind',
+    mix: { stream: 0.7, forest: 0.4, rain: 0, ocean: 0, brownNoise: 0, binaural: 0, fire: 0 }
+  },
+  {
+    id: 'deep_sleep',
+    name: 'Deep Sleep',
+    icon: Radio,
+    description: 'Heavy brown noise and ocean waves',
+    mix: { brownNoise: 0.8, ocean: 0.6, rain: 0, forest: 0, binaural: 0, stream: 0, fire: 0 }
   }
 ];
 
@@ -39,6 +60,8 @@ export function ZenSoundscapeMixer() {
     brownNoise: 0,
     forest: 0,
     binaural: 0,
+    fire: 0,
+    stream: 0,
   });
 
   const [activePreset, setActivePreset] = useState<string | null>(null);
@@ -78,6 +101,8 @@ export function ZenSoundscapeMixer() {
       brownNoise: preset.mix.brownNoise || 0,
       forest: preset.mix.forest || 0,
       binaural: preset.mix.binaural || 0,
+      fire: preset.mix.fire || 0,
+      stream: preset.mix.stream || 0,
     };
     setVolumes(newVols);
     Object.entries(newVols).forEach(([key, vol]) => {
@@ -92,7 +117,7 @@ export function ZenSoundscapeMixer() {
   const stopAll = () => {
     setActivePreset(null);
     ambientEngine.stopAll();
-    const muted = { rain: 0, ocean: 0, brownNoise: 0, forest: 0, binaural: 0 };
+    const muted = { rain: 0, ocean: 0, brownNoise: 0, forest: 0, binaural: 0, fire: 0, stream: 0 };
     setVolumes(muted);
     if (typeof window !== 'undefined') {
       localStorage.setItem('zen_soundscape_volumes', JSON.stringify(muted));
@@ -242,6 +267,42 @@ export function ZenSoundscapeMixer() {
             />
             <span className="w-8 text-right text-[10px] tabular-nums text-slate-400">
               {Math.round(volumes.binaural * 100)}%
+            </span>
+          </div>
+
+          {/* Cozy Fireplace */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-2 w-28 text-slate-600 dark:text-slate-300 font-medium">
+              <Flame className="h-4 w-4 text-orange-500" />
+              <span>Fireplace</span>
+            </div>
+            <Slider
+              value={[volumes.fire]}
+              max={1}
+              step={0.01}
+              onValueChange={([val]) => handleVolumeChange('fire', val)}
+              className="flex-1"
+            />
+            <span className="w-8 text-right text-[10px] tabular-nums text-slate-400">
+              {Math.round(volumes.fire * 100)}%
+            </span>
+          </div>
+
+          {/* River Stream */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-2 w-28 text-slate-600 dark:text-slate-300 font-medium">
+              <Droplets className="h-4 w-4 text-teal-500" />
+              <span>River Stream</span>
+            </div>
+            <Slider
+              value={[volumes.stream]}
+              max={1}
+              step={0.01}
+              onValueChange={([val]) => handleVolumeChange('stream', val)}
+              className="flex-1"
+            />
+            <span className="w-8 text-right text-[10px] tabular-nums text-slate-400">
+              {Math.round(volumes.stream * 100)}%
             </span>
           </div>
         </div>

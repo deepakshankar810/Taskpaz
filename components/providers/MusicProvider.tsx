@@ -16,6 +16,30 @@ const INITIAL_STATIONS: Station[] = [
     author: 'Focus Radio',
     thumbnail: 'https://img.youtube.com/vi/zFhfksj_mco/0.jpg',
   },
+  {
+    id: 'jfKfPfyJRdk',
+    name: 'Lofi Hip Hop Radio',
+    author: 'Lofi Girl',
+    thumbnail: 'https://img.youtube.com/vi/jfKfPfyJRdk/0.jpg',
+  },
+  {
+    id: '4xDzrIxZZ8I',
+    name: 'Space Ambient Music',
+    author: 'Deep Focus',
+    thumbnail: 'https://img.youtube.com/vi/4xDzrIxZZ8I/0.jpg',
+  },
+  {
+    id: '5yx6BWlEVcU',
+    name: 'Chillhop Radio',
+    author: 'Chillhop Music',
+    thumbnail: 'https://img.youtube.com/vi/5yx6BWlEVcU/0.jpg',
+  },
+  {
+    id: '77ZozI0rw7w',
+    name: 'Zen Meditation Music',
+    author: 'Zen Sanctuary',
+    thumbnail: 'https://img.youtube.com/vi/77ZozI0rw7w/0.jpg',
+  }
 ];
 
 interface MusicContextType {
