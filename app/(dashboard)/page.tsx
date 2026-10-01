@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const [zenMode, setZenMode] = useState(false);
 
   // Data Hooks
-  const { tasks, stats: taskStats, loading: loadingTasks } = useTasksContext();
+  const { tasks, stats: taskStats, loading: loadingTasks, optimisticUpdateTask } = useTasksContext();
   const { projects, loading: loadingProjects } = useProjectsContext();
 
   // Computed Data
@@ -60,11 +60,11 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className={`transition-all duration-700 ${zenMode ? 'fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col items-center justify-center p-6 overflow-hidden' : 'space-y-12 p-6 md:p-10 lg:p-14'}`}>
+    <div className={`transition-all duration-700 ${zenMode ? 'fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col items-center justify-center p-6 overflow-y-auto' : 'space-y-12 p-6 md:p-10 lg:p-14'}`}>
       
       {/* Ambient Background for Zen Mode */}
       {zenMode && (
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[120px] animate-pulse" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/10 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
@@ -86,7 +86,7 @@ export default function DashboardPage() {
           </Button>
         </div>
       ) : (
-        <div className="absolute top-8 right-8 z-50">
+        <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50">
           <Button variant="ghost" size="icon" onClick={() => setZenMode(false)} className="rounded-full h-12 w-12 hover:bg-slate-100 dark:hover:bg-slate-900">
             <Eye className="h-6 w-6 text-slate-400" />
           </Button>
@@ -94,22 +94,22 @@ export default function DashboardPage() {
       )}
 
       {zenMode ? (
-        <div className="relative z-10 w-full max-w-2xl text-center space-y-12 animate-in zoom-in-95 duration-700">
+        <div className="relative z-10 w-full max-w-2xl text-center space-y-8 md:space-y-12 animate-in zoom-in-95 duration-700 my-auto py-12">
           <div className="space-y-4">
-            <p className="text-sm font-medium text-blue-500 uppercase tracking-[0.2em]">One thing at a time</p>
+            <p className="text-xs md:text-sm font-medium text-blue-500 uppercase tracking-[0.2em]">One thing at a time</p>
             {todaysTasks.length > 0 ? (
                 <>
-                    <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white leading-tight">
+                    <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white leading-tight break-words">
                         {todaysTasks[0].title}
                     </h2>
                     {todaysTasks[0].description && (
-                        <p className="text-xl text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+                        <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 max-w-lg mx-auto break-words">
                             {todaysTasks[0].description}
                         </p>
                     )}
                 </>
             ) : (
-                <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+                <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white">
                     You're all caught up!
                 </h2>
             )}
@@ -117,11 +117,24 @@ export default function DashboardPage() {
           
           <div className="flex flex-col items-center gap-6">
             {todaysTasks.length > 0 && (
-                <Button size="lg" className="rounded-full px-10 h-14 bg-blue-600 hover:bg-blue-700 text-lg shadow-xl shadow-blue-500/20">
+                <Button 
+                  size="lg" 
+                  onClick={async () => {
+                    const taskId = todaysTasks[0].id;
+                    optimisticUpdateTask(taskId, { status: 'completed' });
+                    try {
+                      const { completeTask } = await import('@/lib/db/tasks');
+                      await completeTask(taskId);
+                    } catch (error) {
+                      console.error('Failed to complete task:', error);
+                    }
+                  }}
+                  className="rounded-full px-8 md:px-10 h-12 md:h-14 bg-blue-600 hover:bg-blue-700 text-base md:text-lg shadow-xl shadow-blue-500/20 w-full max-w-[280px] md:max-w-none"
+                >
                     Mark as Done
                 </Button>
             )}
-            <p className="text-slate-400 text-sm italic">Focus on the present moment.</p>
+            <p className="text-slate-400 text-xs md:text-sm italic">Focus on the present moment.</p>
           </div>
         </div>
       ) : (
