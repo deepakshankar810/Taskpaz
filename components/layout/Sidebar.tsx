@@ -19,7 +19,6 @@ import {
   Focus,
   BookOpen,
   Palette,
-  Calendar,
   Clock,
 } from 'lucide-react';
 import { useThemeAccent } from '@/components/providers/ThemeAccentProvider';
