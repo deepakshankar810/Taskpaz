@@ -19,6 +19,8 @@ import {
   Focus,
   BookOpen,
   Palette,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { useThemeAccent } from '@/components/providers/ThemeAccentProvider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,6 +28,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+  { name: 'Calendar', href: '/calendar', icon: Calendar },
+  { name: 'Reminders', href: '/reminders', icon: Clock },
   { name: 'Focus', href: '/focus', icon: Focus },
   { name: 'Journal', href: '/journal', icon: BookOpen },
   { name: 'Projects', href: '/projects', icon: Folder },

@@ -29,6 +29,11 @@ export default function DashboardPage() {
     (t.status === 'pending' || t.status === 'in-progress')
   ).slice(0, 5);
 
+  const upcomingReminders = tasks
+    .filter(t => (t.status === 'pending' || t.status === 'in-progress') && t.dueDate)
+    .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+    .slice(0, 5);
+
   const recentProjects = projects.slice(0, 5);
 
   useEffect(() => {
@@ -169,7 +174,46 @@ export default function DashboardPage() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid gap-10 md:grid-cols-2">
+          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+
+            {/* Upcoming Reminders */}
+            <Card className="h-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-slate-500" />
+                  Upcoming Dates
+                </CardTitle>
+                <Link href="/reminders">
+                  <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {loadingTasks ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : upcomingReminders.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[150px] text-center space-y-2">
+                    <p className="text-sm text-slate-500">No upcoming dates.</p>
+                    <Link href="/reminders"><Button variant="outline" size="sm">Add Reminder</Button></Link>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {upcomingReminders.map(task => (
+                      <Link key={task.id} href={`/reminders`}>
+                        <li className="group rounded border p-3 text-sm bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-all flex justify-between items-center cursor-pointer">
+                          <span className="font-medium truncate">{task.title}</span>
+                          <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30">
+                            {new Date(task.dueDate!).toLocaleDateString()}
+                          </span>
+                        </li>
+                      </Link>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Recent Tasks */}
             <Card className="h-full">
